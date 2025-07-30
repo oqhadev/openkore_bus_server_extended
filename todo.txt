@@ -1,0 +1,9 @@
+- simplify console messsage, only show when client join/exit and when client send broadcast, and total client connected, also the error/warning things
+   - just say "client connected (id)" when get identified
+   - client (id) broadcast message (arg)
+   - remove hello things
+
+
+- implement full api server
+- add api endpoint to broadcast message to all client 
+
