@@ -2,6 +2,11 @@
 applyTo: "**"
 ---
 
+# Development Instructions
+
+- dont generate any .md files, test files and docs except i ask for it
+- Do not process the todo.txt file or reference it unless I specifically request it.
+
 # Project Overview
 
 app name "Openkore Bus Server Extended"
@@ -25,10 +30,6 @@ and add some api functionality to it, using python and asyncio.
 # Tech and Package Used
 
 - python 3
-
-# Development Instructions
-
-- dont generate any .md files, test files and docs until i ask for it
 
 # Code Style
 
