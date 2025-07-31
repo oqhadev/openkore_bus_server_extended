@@ -1,5 +1,5 @@
 """
-Message handling for the OpenKore Bus API
+Message handling for the OpenKore Bus Server Extended
 Handles serialization and parsing of bus messages using SSM (Simple Serializable Message) format
 """
 

@@ -1,5 +1,5 @@
 """
-Base server implementation for the OpenKore Bus API
+Base server implementation for the OpenKore Bus Server Extended
 Handles TCP connections and client management using asyncio
 """
 

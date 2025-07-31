@@ -1,2 +1,3 @@
-# OpenKore Bus API Requirements
+# OpenKore Bus Server Extended Requirements
 discord-webhook>=1.0.0  # For Discord webhook integration
+pyinstaller>=5.0  # For building executable

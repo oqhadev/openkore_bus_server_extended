@@ -14,7 +14,7 @@ from .main_server import MainServer
 
 
 class BusAPIHandler(BaseHTTPRequestHandler):
-    """HTTP request handler for bus API endpoints."""
+    """HTTP request handler for bus server endpoints."""
     
     def __init__(self, bus_server: MainServer, *args, **kwargs):
         self.bus_server = bus_server

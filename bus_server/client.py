@@ -1,5 +1,5 @@
 """
-Simple client implementation for connecting to the OpenKore Bus API
+Simple client implementation for connecting to the OpenKore Bus Server Extended
 Compatible with the original OpenKore bus protocol
 """
 

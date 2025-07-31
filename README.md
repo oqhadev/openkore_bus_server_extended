@@ -67,6 +67,7 @@ Send messages directly to Discord channels when using `player=discord`:
 ### Setup Discord Webhook
 
 1. **Create webhook configuration:**
+
 ```bash
 # Copy example config
 cp config.ini.example config.ini

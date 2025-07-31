@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-OpenKore Bus API Server
+OpenKore Bus Server Extended
 Recreated in Python with asyncio
 
 This project recreates the OpenKore bus server functionality in Python,
@@ -15,7 +15,7 @@ import sys
 
 async def main():
     """Main entry point for the bus server."""
-    parser = argparse.ArgumentParser(description='OpenKore Bus API Server')
+    parser = argparse.ArgumentParser(description='OpenKore Bus Server Extended')
     parser.add_argument('--port', type=int, default=8082, 
                        help='Port to bind server (default: 8082)')
     parser.add_argument('--bind', type=str, default='10.244.244.99',
