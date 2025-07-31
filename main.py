@@ -16,10 +16,10 @@ import sys
 async def main():
     """Main entry point for the bus server."""
     parser = argparse.ArgumentParser(description='OpenKore Bus Server Extended')
-    parser.add_argument('--port', type=int, default=8082, 
-                       help='Port to bind server (default: 8082)')
-    parser.add_argument('--bind', type=str, default='10.244.244.99',
-                       help='IP address to bind server (default: 10.244.244.99)')
+    parser.add_argument('--port', type=int, default=8020, 
+                       help='Port to bind server (default: 8020)')
+    parser.add_argument('--bind', type=str, default='127.0.0.1',
+                       help='IP address to bind server (default: 127.0.0.1)')
     parser.add_argument('--api-port', type=int, default=None,
                        help='Port for API server (default: main port + 1000)')
     parser.add_argument('--quiet', action='store_true',

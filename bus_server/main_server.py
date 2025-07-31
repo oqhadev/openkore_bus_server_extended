@@ -7,6 +7,7 @@ import asyncio
 import time
 import configparser
 import os
+import sys
 from typing import Dict, Optional, Set
 
 try:
@@ -36,9 +37,34 @@ class MainServer(BaseServer):
         """Load Discord webhook URL from config.ini"""
         try:
             config = configparser.ConfigParser()
-            config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.ini')
+            
+            # Try multiple possible config.ini locations
+            possible_paths = [
+                # Same directory as executable (for PyInstaller)
+                os.path.join(os.path.dirname(os.path.abspath(sys.executable if getattr(sys, 'frozen', False) else __file__)), 'config.ini'),
+                # Project root (for development)
+                os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.ini'),
+                # Current working directory
+                'config.ini'
+            ]
+            
+            config_path = None
+            for path in possible_paths:
+                if os.path.exists(path):
+                    config_path = path
+                    break
+            
+            if not config_path:
+                if not self.quiet:
+                    print(f"⚠️ config.ini not found in any of these locations: {possible_paths}")
+                return None
+            
             config.read(config_path)
             webhook_url = config.get('discord', 'discord_webhook', fallback='')
+            
+            if not self.quiet:
+                print(f"📋 Config loaded from: {config_path}")
+            
             return webhook_url if webhook_url else None
         except Exception as e:
             if not self.quiet:
