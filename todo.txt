@@ -8,5 +8,4 @@
 - add api endpoint to broadcast message to all client 
 - add unit testing and github action
 - implement function to forward spesific message from client to api endpoint (needed to monitor function)
-- implement busCommand plugin with more fiture/command
 
