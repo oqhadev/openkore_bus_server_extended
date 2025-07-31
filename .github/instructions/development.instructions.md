@@ -12,6 +12,7 @@ applyTo: "**"
 app name "Openkore Bus Server Extended"
 this project is to recreate the bus server for openkore https://github.com/OpenKore/openkore/tree/master/src/Bus
 and add some api functionality to it, using python and asyncio.
+and also integration to busCommand plugin
 
 # Project Goals
 

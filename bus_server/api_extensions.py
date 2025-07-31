@@ -24,13 +24,12 @@ class BusAPIHandler(BaseHTTPRequestHandler):
         """Handle GET requests."""
         parsed_path = urlparse(self.path)
         path = parsed_path.path
+        query_params = parse_qs(parsed_path.query)
         
         if path == '/api/status':
             self._handle_status()
-        elif path == '/api/clients':
-            self._handle_clients()
-        elif path == '/api/stats':
-            self._handle_stats()
+        elif path == '/bc':
+            self._handle_broadcast_get(query_params)
         else:
             self._send_error(404, "Not Found")
     
@@ -56,34 +55,78 @@ class BusAPIHandler(BaseHTTPRequestHandler):
         }
         self._send_json_response(status)
     
-    def _handle_clients(self):
-        """Return list of connected clients."""
-        clients = []
-        for client_id, client in self.bus_server.clients.items():
-            if client.state == MainServer.IDENTIFIED:
-                clients.append({
-                    "id": client_id,
-                    "name": client.name,
-                    "user_agent": client.user_agent,
-                    "address": str(client.address),
-                    "private_only": client.private_only
-                })
-        
-        self._send_json_response({"clients": clients, "count": len(clients)})
+    def _handle_broadcast_get(self, query_params: Dict):
+        """Handle broadcast message via GET request with query parameters."""
+        try:
+            # Extract parameters from query
+            player = query_params.get('player', [''])[0]
+            comm = query_params.get('comm', [''])[0]
+            
+            if not player or not comm:
+                self._send_error(400, "Missing required parameters: player and comm")
+                return
+            
+            # Build message arguments - keep OpenKore format
+            args = {
+                'player': player,
+                'comm': comm
+            }
+            
+            # Add any additional query parameters
+            for key, values in query_params.items():
+                if key not in ['player', 'comm'] and values:
+                    args[key] = values[0]
+            
+            message_id = 'busComm'  # Use OpenKore standard message ID
+            
+            # Log the API call
+            if not self.bus_server.quiet:
+                print(f"🌐 API Broadcast: player={player}, comm={comm}")
+            
+            # Schedule the broadcast in the event loop
+            try:
+                # Get the event loop from the main thread
+                if hasattr(self.bus_server, '_event_loop') and self.bus_server._event_loop:
+                    loop = self.bus_server._event_loop
+                else:
+                    # Fallback: try to get the running loop
+                    try:
+                        loop = asyncio.get_running_loop()
+                    except RuntimeError:
+                        # Create a new event loop if none exists
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                
+                future = asyncio.run_coroutine_threadsafe(
+                    self.bus_server.broadcast(message_id, args),
+                    loop
+                )
+                future.result(timeout=2.0)  # Wait up to 2 seconds
+                
+                client_count = len([c for c in self.bus_server.clients.values() 
+                                  if c.state == self.bus_server.IDENTIFIED])
+                
+                response = {
+                    "status": "success",
+                    "message": "Broadcast sent successfully",
+                    "message_id": message_id,
+                    "args": args,
+                    "client_count": client_count
+                }
+                
+                if not self.bus_server.quiet:
+                    print(f"📡 API broadcast sent to {client_count} clients")
+                
+                self._send_json_response(response)
+                
+            except asyncio.TimeoutError:
+                self._send_error(500, "Broadcast timeout")
+            except Exception as e:
+                self._send_error(500, f"Broadcast failed: {str(e)}")
+                
+        except Exception as e:
+            self._send_error(400, f"Bad Request: {str(e)}")
     
-    def _handle_stats(self):
-        """Return server statistics."""
-        total_clients = len(self.bus_server.clients)
-        identified_clients = len([c for c in self.bus_server.clients.values() 
-                                if c.state == MainServer.IDENTIFIED])
-        
-        stats = {
-            "total_connections": total_clients,
-            "identified_clients": identified_clients,
-            "server_uptime": "N/A",  # Could implement uptime tracking
-            "messages_processed": "N/A"  # Could implement message counting
-        }
-        self._send_json_response(stats)
     
     def _handle_broadcast(self):
         """Handle broadcast message via API."""
@@ -124,7 +167,7 @@ class BusAPIHandler(BaseHTTPRequestHandler):
             # Schedule the message send in the event loop
             future = asyncio.run_coroutine_threadsafe(
                 self.bus_server.send_to_client(client_id, message_id, args),
-                asyncio.get_event_loop()
+                self.bus_server._event_loop if hasattr(self.bus_server, '_event_loop') else asyncio.get_event_loop()
             )
             
             success = future.result(timeout=1.0)
@@ -143,6 +186,9 @@ class BusAPIHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Content-Length', str(len(response)))
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
         self.wfile.write(response)
     
@@ -153,6 +199,9 @@ class BusAPIHandler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Content-Length', str(len(response)))
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
         self.wfile.write(response)
 
@@ -166,9 +215,12 @@ class BusServerWithAPI(MainServer):
         self.api_port = api_port or (port + 1000) if port > 0 else 9080
         self.api_server: Optional[HTTPServer] = None
         self.api_thread: Optional[threading.Thread] = None
+        self._event_loop: Optional[asyncio.AbstractEventLoop] = None
     
     async def start(self) -> None:
         """Start the bus server and API server."""
+        # Store the event loop reference for API handler
+        self._event_loop = asyncio.get_running_loop()
         await super().start()
         self._start_api_server()
     
@@ -180,12 +232,13 @@ class BusServerWithAPI(MainServer):
     def _start_api_server(self) -> None:
         """Start the REST API server in a separate thread."""
         if not self.quiet:
-            print(f"Starting API server on port {self.api_port}")
+            print(f"🌐 Starting API server on {self.host}:{self.api_port}")
         
         def handler_factory(*args, **kwargs):
             return BusAPIHandler(self, *args, **kwargs)
         
-        self.api_server = HTTPServer(('localhost', self.api_port), handler_factory)
+        # Use the same host as the main server
+        self.api_server = HTTPServer((self.host, self.api_port), handler_factory)
         self.api_thread = threading.Thread(target=self.api_server.serve_forever)
         self.api_thread.daemon = True
         self.api_thread.start()

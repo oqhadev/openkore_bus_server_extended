@@ -222,3 +222,11 @@ class MainServer(BaseServer):
                 await log_task
             except asyncio.CancelledError:
                 pass
+    
+    async def send_to_client(self, client_id: str, message_id: str, args: Optional[dict] = None) -> bool:
+        """Send a message to a specific client by ID."""
+        if client_id in self.clients:
+            client = self.clients[client_id]
+            if client.state == self.IDENTIFIED:
+                return await client.send(message_id, args)
+        return False

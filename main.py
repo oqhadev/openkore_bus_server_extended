@@ -7,7 +7,7 @@ This project recreates the OpenKore bus server functionality in Python,
 providing a communication channel for multiple clients to exchange messages.
 """
 
-from bus_server.main_server import MainServer
+from bus_server.api_extensions import BusServerWithAPI
 import asyncio
 import argparse
 import sys
@@ -20,6 +20,8 @@ async def main():
                        help='Port to bind server (default: 8082)')
     parser.add_argument('--bind', type=str, default='10.244.244.99',
                        help='IP address to bind server (default: 10.244.244.99)')
+    parser.add_argument('--api-port', type=int, default=None,
+                       help='Port for API server (default: main port + 1000)')
     parser.add_argument('--quiet', action='store_true',
                        help='Suppress status messages')
     
@@ -33,12 +35,21 @@ async def main():
         print("         by OqhaDev © 2025")
         print("=" * 60)
         print(f"🌐 Server: {args.bind}:{args.port}")
+        if args.api_port:
+            print(f"🌐 API Server: {args.bind}:{args.api_port}")
+        else:
+            print(f"🌐 API Server: {args.bind}:{args.port + 1000}")
         print("⚡ Press Ctrl+C to stop")
         print("=" * 60)
         print()
     
-    # Create and start the server
-    server = MainServer(port=args.port, bind=args.bind, quiet=args.quiet)
+    # Create and start the server with API
+    server = BusServerWithAPI(
+        port=args.port, 
+        bind=args.bind, 
+        quiet=args.quiet,
+        api_port=args.api_port
+    )
     
     try:
         await server.start()
