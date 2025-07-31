@@ -60,3 +60,6 @@ venv.bak/
 # OS
 .DS_Store
 Thumbs.db
+
+# Configuration files with sensitive data
+config.ini

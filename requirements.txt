@@ -1,3 +1,2 @@
 # OpenKore Bus API Requirements
-# No external dependencies required - using only Python standard library
-# This aligns with the original OpenKore bus implementation which was self-contained
+discord-webhook>=1.0.0  # For Discord webhook integration

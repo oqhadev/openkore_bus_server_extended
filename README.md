@@ -1,4 +1,8 @@
+<div align="center">
+
 # 🚀 OpenKore Bus Server Extended
+
+</div>
 
 <div align="center">
 
@@ -16,10 +20,26 @@ _Built with asyncio for high-performance asynchronous operations and HTTP API in
 
 - 🌐 **HTTP API** - RESTful endpoints for external integrations
 - 🎮 **busCommand Plugin Integration** - Direct integration with OpenKore's busCommand plugin
+- 📨 **Discord Webhook Integration** - Send messages directly to Discord channels
 
 ## 🚀 Quick Start
 
 ```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure Discord webhook (optional)
+cp config.ini.example config.ini
+# Edit config.ini with your Discord webhook URL
+
+# Install and activate plugin busCommand
+# https://github.com/marcelothebuilder/openkore-busCommands
+# In OpenKore config.txt:
+busServer_host 10.244.244.99
+busServer_port 8082
+busAuto 1
+
+# Start server
 python main.py
 ```
 
@@ -40,33 +60,27 @@ curl "http://localhost:9082/bc?player=all&comm=s"
 curl "http://localhost:9082/bc?player=all&comm=i"
 ```
 
-### busCommand Plugin Setup
+## 📨 Discord Webhook Integration
 
-Ensure your OpenKore clients have the busCommand plugin enabled:
+Send messages directly to Discord channels when using `player=discord`:
 
-```perl
-# In config.txt
-busServer_host 10.244.244.99
-busServer_port 8082
-busAuto 1
+### Setup Discord Webhook
 
-# Load busCommand plugin
-enable busCommand plugin https://github.com/marcelothebuilder/openkore-busCommands
+1. **Create webhook configuration:**
+```bash
+# Copy example config
+cp config.ini.example config.ini
+
+# Edit config.ini and add your Discord webhook URL
+[discord]
+discord_webhook=https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN
 ```
 
-### API Response Format
+### Send to Discord
 
-```json
-{
-  "status": "success",
-  "message": "Broadcast sent successfully",
-  "message_id": "busComm",
-  "args": {
-    "player": "all",
-    "comm": "where"
-  },
-  "client_count": 2
-}
+```bash
+# OpenKore command format
+bus discord Hello Discord!
 ```
 
 ## ⚙️ Configuration
@@ -165,8 +179,7 @@ External App → HTTP API → Bus Server → OpenKore Clients → OpenKore Comma
 
 ## Requirements
 
-- **Python 3.7+**
-- **No external dependencies** - Pure Python implementation using standard library only
+- **Python 3.x**
 
 ---
 

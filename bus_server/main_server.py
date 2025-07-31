@@ -5,7 +5,14 @@ Recreates the OpenKore Bus::Server::MainServer functionality in Python
 
 import asyncio
 import time
+import configparser
+import os
 from typing import Dict, Optional, Set
+
+try:
+    from discord_webhook import DiscordWebhook
+except ImportError:
+    DiscordWebhook = None
 
 from .base_server import BaseServer, ClientConnection
 
@@ -23,6 +30,46 @@ class MainServer(BaseServer):
     def __init__(self, port: int = 0, bind: str = 'localhost', quiet: bool = False):
         super().__init__(port, bind, quiet)
         self.last_connection_log = time.time()
+        self.discord_webhook = self._load_discord_webhook()
+    
+    def _load_discord_webhook(self) -> Optional[str]:
+        """Load Discord webhook URL from config.ini"""
+        try:
+            config = configparser.ConfigParser()
+            config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.ini')
+            config.read(config_path)
+            webhook_url = config.get('discord', 'discord_webhook', fallback='')
+            return webhook_url if webhook_url else None
+        except Exception as e:
+            if not self.quiet:
+                print(f"⚠️ Failed to load Discord webhook config: {e}")
+            return None
+    
+    async def _send_to_discord(self, message: str) -> bool:
+        """Send message to Discord webhook"""
+        if not self.discord_webhook or not DiscordWebhook:
+            return False
+        
+        try:
+            webhook = DiscordWebhook(url=self.discord_webhook, content=message)
+            
+            # Use asyncio to run the blocking request in a thread pool
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(None, webhook.execute)
+            
+            if response.status_code in [200, 204]:  # Discord webhook success
+                if not self.quiet:
+                    print(f"📨 Message sent to Discord: {message}")
+                return True
+            else:
+                if not self.quiet:
+                    print(f"❌ Discord webhook failed with status {response.status_code}")
+                return False
+                
+        except Exception as e:
+            if not self.quiet:
+                print(f"❌ Failed to send Discord message: {e}")
+            return False
     
     async def on_client_new(self, client: ClientConnection) -> None:
         """Handle new client connection - send initial HELLO."""
@@ -100,6 +147,20 @@ class MainServer(BaseServer):
                 reply_args["IRY"] = 1
                 await client.send("CLIENT_NOT_FOUND", reply_args)
         else:
+            # Check if this is a Discord message
+            player = args.get("player", "").lower()
+            if player == "discord":
+                # Send to Discord webhook instead of broadcasting
+                comm = args.get("comm", "")
+                
+                success = await self._send_to_discord(comm)
+                if not self.quiet:
+                    if success:
+                        print(f"📨 Discord message sent from {client.name}: {comm}")
+                    else:
+                        print(f"❌ Failed to send Discord message from {client.name}")
+                return
+            
             # Broadcast message to all clients (except system messages)
             args["FROM"] = client.client_id
             
